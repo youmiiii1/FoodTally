@@ -1,4 +1,6 @@
 import os
+#Railway
+WEBHOOK_URL_RAIL = os.getenv("WEBHOOK_URL_RAIL")
 
 # TG 'FoodTelly1.0' API
 TOKEN_BOT = os.getenv("TOKEN_BOT")

@@ -1,26 +1,36 @@
 import logging
-import asyncio
+import os
 from fastapi import Request
-from handlers import *
+from aiogram.types import Update
+
 from init import app, bot, dp, create_pool, close_pool
+from handlers import main_menu, personal_info, photo_analyze, meal_report, build_meal
 from database.meal_report import create_table_meal_report, new_report
 from database.personal_info import create_table_users_info
 from keyboards.main_menu import main_menu_keyboard
 from texts.main_menu import main_menu_text
+from config import WEBHOOK_URL_RAIL
 
+
+# -----------------------------
 # Logging to logs.txt
-logging.basicConfig(level=logging.INFO,
-                    filemode='a',
-                    filename='logs.txt',
-                    format="%(asctime)s %(levelname)s %(message)s")
+# -----------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    filemode='a',
+    filename='logs.txt',
+    format="%(asctime)s %(levelname)s %(message)s"
+)
 
-# Catching http post request from make.com (From Meal Report)
+
+# -----------------------------
+# 1. MAKE.COM endpoints (оставлены полностью)
+# -----------------------------
 @app.post("/make_record")
-async def make_reply(request: Request):
+async def make_record(request: Request):
     try:
         data = await request.json()
 
-        # Getting and formating from make.com as string
         chat_id = int(data.get("chat_id"))
         dish_name = str(data.get("dish_name"))
         calories_estimated = int(data.get("calories_estimated"))
@@ -30,7 +40,7 @@ async def make_reply(request: Request):
         balance_assessment = str(data.get("balance_assessment"))
         products_list = str(data.get("products_list"))
 
-        result = await bot.send_message(
+        await bot.send_message(
             chat_id,
             f"<b>🍽 {dish_name}</b>\n"
             f"──────────────────────\n"
@@ -42,13 +52,6 @@ async def make_reply(request: Request):
             parse_mode="HTML"
         )
 
-        # Timeless connection pool only for this request
-        """
-        Why is this needed? 
-        We cannot reuse the global connection pool created by `create_pool()` inside a FastAPI POST request handler,
-        because it may not be available or properly initialized in this async context.
-        Therefore, we create a new temporary pool for this specific request instead.
-        """
         pool = await create_pool()
         await new_report(pool, chat_id, dish_name, calories_estimated, protein_g, fat_g, carbs_g, balance_assessment, products_list)
         await pool.close()
@@ -60,13 +63,12 @@ async def make_reply(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
-# Catching http post request from make.com (From Photo analyze)
+
 @app.post("/make_reply")
 async def make_reply(request: Request):
     try:
         data = await request.json()
 
-        # Getting and formating from make.com as string
         chat_id = int(data.get("chat_id"))
         dish_name = str(data.get("dish_name"))
         calories_estimated = int(data.get("calories_estimated"))
@@ -75,7 +77,7 @@ async def make_reply(request: Request):
         carbs_g = float(data.get("carbs_g"))
         balance_assessment = str(data.get("balance_assessment"))
 
-        result = await bot.send_message(
+        await bot.send_message(
             chat_id,
             f"<b>🍽 {dish_name}</b>\n"
             f"<code>────────────────────────────</code>\n"
@@ -95,13 +97,12 @@ async def make_reply(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
-# Catching http post request from make.com (From Build Meal)
+
 @app.post("/make_build")
-async def make_reply(request: Request):
+async def make_build(request: Request):
     try:
         data = await request.json()
 
-        # Getting and formating from make.com as string
         chat_id = int(data.get("chat_id"))
         dish_name = str(data.get("dish_name"))
         calories_estimated = int(data.get("calories_estimated"))
@@ -110,7 +111,7 @@ async def make_reply(request: Request):
         carbs_g = float(data.get("carbs_g"))
         cook_process = str(data.get("cook_process"))
 
-        result = await bot.send_message(
+        await bot.send_message(
             chat_id,
             f"<b>🍽 {dish_name}</b>\n"
             f"<code>────────────────────────────</code>\n"
@@ -131,17 +132,16 @@ async def make_reply(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
-# Catching http post request from make.com (From Shop Helper)
+
 @app.post("/make_shop_help")
-async def make_reply(request: Request):
+async def make_shop_help(request: Request):
     try:
         data = await request.json()
 
-        # Getting and formating from make.com as string
         chat_id = int(data.get("chat_id"))
         product_list = str(data.get("product_list"))
 
-        result = await bot.send_message(
+        await bot.send_message(
             chat_id,
             f"<b>🛒 Grocery list:</b>\n"
             f"<code>────────────────────────────</code>\n"
@@ -156,34 +156,56 @@ async def make_reply(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
-# Creating pool for Database everytime program running
-@dp.startup.register
-async def on_startup(bot: bot):
+
+# ============================================================
+# 2. WEBHOOK TELEGRAM
+# ============================================================
+
+@app.post("/webhook")
+async def telegram_webhook(request: Request):
+    data = await request.json()
+    update = Update.model_validate(data)
+    await dp.feed_update(bot, update)
+    return {"ok": True}
+
+
+# ============================================================
+# 3. STARTUP / SHUTDOWN Aiogram (как у тебя, но через FastAPI)
+# ============================================================
+
+@app.on_event("startup")
+async def on_startup():
+    print("🚀 Bot startup (WEBHOOK MODE)")
+
     pool = await create_pool()
     dp['db_pool'] = pool
 
     await create_table_meal_report(pool)
     await create_table_users_info(pool)
 
-# Closing pool for Database everytime program stoping
-@dp.shutdown.register
-async def on_shutdown(bot: bot):
-    pool = dp.get('db_pool')
+    # Register routers
+    dp.include_routers(
+        main_menu.router,
+        personal_info.router,
+        photo_analyze.router,
+        meal_report.router,
+        build_meal.router,
+    )
 
+    await bot.delete_webhook()
+    await bot.set_webhook(WEBHOOK_URL_RAIL)
+
+    print(f"Webhook installed → {WEBHOOK_URL_RAIL}")
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    print("🛑 Shutdown...")
+
+    await bot.delete_webhook()
+
+    pool = dp.get('db_pool')
     if pool:
         await close_pool(pool)
 
-# Init our routers from handles so they work
-async def init_bot():
-    dp.include_routers(main_menu.router, personal_info.router, photo_analyze.router, meal_report.router, build_meal.router)
-
-    await dp.start_polling(bot)
-
-# Starter
-async def main():
-    task_1 = asyncio.create_task(init_bot())
-
-    await task_1
-
-if __name__ == '__main__':
-    asyncio.run(main())
+    print("Webhook removed. DB pool closed.")
