@@ -1,5 +1,4 @@
 import logging
-import os
 from fastapi import Request
 from aiogram.types import Update
 
@@ -13,7 +12,7 @@ from config import WEBHOOK_URL_RAIL
 
 
 # -----------------------------
-# Logging to logs.txt
+# Logging
 # -----------------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -23,22 +22,23 @@ logging.basicConfig(
 )
 
 
-# -----------------------------
-# 1. MAKE.COM endpoints (оставлены полностью)
-# -----------------------------
+# ============================================================
+# 1. MAKE.COM endpoints
+# ============================================================
+
 @app.post("/make_record")
 async def make_record(request: Request):
     try:
         data = await request.json()
 
-        chat_id = int(data.get("chat_id"))
-        dish_name = str(data.get("dish_name"))
-        calories_estimated = int(data.get("calories_estimated"))
-        protein_g = float(data.get("protein_g"))
-        fat_g = float(data.get("fat_g"))
-        carbs_g = float(data.get("carbs_g"))
-        balance_assessment = str(data.get("balance_assessment"))
-        products_list = str(data.get("products_list"))
+        chat_id = int(data["chat_id"])
+        dish_name = str(data["dish_name"])
+        calories_estimated = int(data["calories_estimated"])
+        protein_g = float(data["protein_g"])
+        fat_g = float(data["fat_g"])
+        carbs_g = float(data["carbs_g"])
+        balance_assessment = str(data["balance_assessment"])
+        products_list = str(data["products_list"])
 
         await bot.send_message(
             chat_id,
@@ -49,11 +49,14 @@ async def make_record(request: Request):
             f"  • <b>Fat:</b> {fat_g} g\n"
             f"  • <b>Carbohydrates:</b> {carbs_g} g\n\n"
             f"<i>💬 {balance_assessment}</i>",
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
 
         pool = await create_pool()
-        await new_report(pool, chat_id, dish_name, calories_estimated, protein_g, fat_g, carbs_g, balance_assessment, products_list)
+        await new_report(
+            pool, chat_id, dish_name, calories_estimated,
+            protein_g, fat_g, carbs_g, balance_assessment, products_list
+        )
         await pool.close()
 
         await bot.send_message(chat_id, main_menu_text, reply_markup=main_menu_keyboard)
@@ -69,13 +72,13 @@ async def make_reply(request: Request):
     try:
         data = await request.json()
 
-        chat_id = int(data.get("chat_id"))
-        dish_name = str(data.get("dish_name"))
-        calories_estimated = int(data.get("calories_estimated"))
-        protein_g = float(data.get("protein_g"))
-        fat_g = float(data.get("fat_g"))
-        carbs_g = float(data.get("carbs_g"))
-        balance_assessment = str(data.get("balance_assessment"))
+        chat_id = int(data["chat_id"])
+        dish_name = str(data["dish_name"])
+        calories_estimated = int(data["calories_estimated"])
+        protein_g = float(data["protein_g"])
+        fat_g = float(data["fat_g"])
+        carbs_g = float(data["carbs_g"])
+        balance_assessment = str(data["balance_assessment"])
 
         await bot.send_message(
             chat_id,
@@ -87,11 +90,10 @@ async def make_reply(request: Request):
             f"  • Fat: <b>{fat_g}</b> g\n"
             f"  • Carbohydrates: <b>{carbs_g}</b> g\n\n"
             f"💬 <i>{balance_assessment}</i>",
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
 
         await bot.send_message(chat_id, main_menu_text, reply_markup=main_menu_keyboard)
-
         return {"status": "ok"}
 
     except Exception as e:
@@ -103,13 +105,13 @@ async def make_build(request: Request):
     try:
         data = await request.json()
 
-        chat_id = int(data.get("chat_id"))
-        dish_name = str(data.get("dish_name"))
-        calories_estimated = int(data.get("calories_estimated"))
-        protein_g = float(data.get("protein_g"))
-        fat_g = float(data.get("fat_g"))
-        carbs_g = float(data.get("carbs_g"))
-        cook_process = str(data.get("cook_process"))
+        chat_id = int(data["chat_id"])
+        dish_name = str(data["dish_name"])
+        calories_estimated = int(data["calories_estimated"])
+        protein_g = float(data["protein_g"])
+        fat_g = float(data["fat_g"])
+        carbs_g = float(data["carbs_g"])
+        cook_process = str(data["cook_process"])
 
         await bot.send_message(
             chat_id,
@@ -122,11 +124,10 @@ async def make_build(request: Request):
             f"  • Carbohydrates: <b>{carbs_g}</b> g\n\n"
             f"👩‍🍳 <b>Cooking Process:</b>\n"
             f"<i>{cook_process}</i>",
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
 
         await bot.send_message(chat_id, main_menu_text, reply_markup=main_menu_keyboard)
-
         return {"status": "ok"}
 
     except Exception as e:
@@ -138,19 +139,18 @@ async def make_shop_help(request: Request):
     try:
         data = await request.json()
 
-        chat_id = int(data.get("chat_id"))
-        product_list = str(data.get("product_list"))
+        chat_id = int(data["chat_id"])
+        product_list = str(data["product_list"])
 
         await bot.send_message(
             chat_id,
             f"<b>🛒 Grocery list:</b>\n"
             f"<code>────────────────────────────</code>\n"
             f"{product_list}",
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
 
         await bot.send_message(chat_id, main_menu_text, reply_markup=main_menu_keyboard)
-
         return {"status": "ok"}
 
     except Exception as e:
@@ -158,19 +158,19 @@ async def make_shop_help(request: Request):
 
 
 # ============================================================
-# 2. WEBHOOK TELEGRAM
+# 2. TELEGRAM WEBHOOK ENDPOINT
 # ============================================================
 
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     data = await request.json()
     update = Update.model_validate(data)
-    await dp.feed_update(bot, update)
+    await dp.feed_webhook_update(bot, update)
     return {"ok": True}
 
 
 # ============================================================
-# 3. STARTUP / SHUTDOWN Aiogram (как у тебя, но через FastAPI)
+# 3. STARTUP / SHUTDOWN
 # ============================================================
 
 @app.on_event("startup")
@@ -192,10 +192,12 @@ async def on_startup():
         build_meal.router,
     )
 
+    # Установка Webhook
+    webhook_full_url = f"{WEBHOOK_URL_RAIL}/webhook"
     await bot.delete_webhook()
-    await bot.set_webhook(WEBHOOK_URL_RAIL)
+    await bot.set_webhook(webhook_full_url)
 
-    print(f"Webhook installed → {WEBHOOK_URL_RAIL}")
+    print(f"Webhook installed → {webhook_full_url}")
 
 
 @app.on_event("shutdown")
@@ -209,3 +211,4 @@ async def on_shutdown():
         await close_pool(pool)
 
     print("Webhook removed. DB pool closed.")
+
