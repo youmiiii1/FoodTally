@@ -144,6 +144,26 @@ async def make_shop_help(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
+'''
+167: This is a FastAPI decorator. It tells your Web Service (run through Gunicorn on Render): When a POST request comes 
+in to the /webhook address (e.g. https://foodtally-bot-api.onrender.com/webhook), execute this asynchronous function.
+
+168: We add request: Request to the arguments of the telegram_webhook function precisely 
+because it accepts a request in the HTTP form (POST) from Telegram.
+
+169: It unpacks (deserializes) the body of the HTTP request that was passed by Telegram to your bot.
+
+170: This command takes your Python dictionary (data) and:
+
+- Validates: ensures that the data dictionary contains all the required fields 
+that Telegram should send (e.g., update_id, message, or callback_query). 
+If the Telegram data doesn't match the expected structure, Pydantic will throw an error, preventing your program from crashing.
+- Converts (types): Converts an unstructured dictionary (dict) into a strongly typed Python object (update).
+
+171: This line integrates WebHook with your bot. It takes a message received via HTTP and 
+passes it to the main aiogram engine, which already knows how to process it and respond.
+'''
+
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     data = await request.json()
