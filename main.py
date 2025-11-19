@@ -10,21 +10,12 @@ from keyboards.main_menu import main_menu_keyboard
 from texts.main_menu import main_menu_text
 from config import WEBHOOK_URL_RAIL
 
-
-# -----------------------------
-# Logging
-# -----------------------------
 logging.basicConfig(
     level=logging.INFO,
     filemode='a',
     filename='logs.txt',
     format="%(asctime)s %(levelname)s %(message)s"
 )
-
-
-# ============================================================
-# 1. MAKE.COM endpoints
-# ============================================================
 
 @app.post("/make_record")
 async def make_record(request: Request):
@@ -66,7 +57,6 @@ async def make_record(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
-
 @app.post("/make_reply")
 async def make_reply(request: Request):
     try:
@@ -98,7 +88,6 @@ async def make_reply(request: Request):
 
     except Exception as e:
         return {"error": str(e)}
-
 
 @app.post("/make_build")
 async def make_build(request: Request):
@@ -133,7 +122,6 @@ async def make_build(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
-
 @app.post("/make_shop_help")
 async def make_shop_help(request: Request):
     try:
@@ -156,11 +144,6 @@ async def make_shop_help(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
-
-# ============================================================
-# 2. TELEGRAM WEBHOOK ENDPOINT
-# ============================================================
-
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     data = await request.json()
@@ -168,22 +151,14 @@ async def telegram_webhook(request: Request):
     await dp.feed_webhook_update(bot, update)
     return {"ok": True}
 
-
-# ============================================================
-# 3. STARTUP / SHUTDOWN
-# ============================================================
-
 @app.on_event("startup")
 async def on_startup():
-    print("🚀 Bot startup (WEBHOOK MODE)")
-
     pool = await create_pool()
     dp['db_pool'] = pool
 
     await create_table_meal_report(pool)
     await create_table_users_info(pool)
 
-    # Register routers
     dp.include_routers(
         main_menu.router,
         personal_info.router,
@@ -192,23 +167,16 @@ async def on_startup():
         build_meal.router,
     )
 
-    # Установка Webhook
     webhook_full_url = f"{WEBHOOK_URL_RAIL}/webhook"
     await bot.delete_webhook()
     await bot.set_webhook(webhook_full_url)
 
-    print(f"Webhook installed → {webhook_full_url}")
-
-
 @app.on_event("shutdown")
 async def on_shutdown():
-    print("🛑 Shutdown...")
 
     await bot.delete_webhook()
 
     pool = dp.get('db_pool')
+
     if pool:
         await close_pool(pool)
-
-    print("Webhook removed. DB pool closed.")
-
