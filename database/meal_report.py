@@ -1,3 +1,5 @@
+from utils.formated_text import show_menu_reports_formated, show_product_list_formated
+
 # Creating table meal_report if it not exists
 async def create_table_meal_report(pool):
     async with pool.acquire() as conn:
@@ -43,37 +45,7 @@ async def show_menu_reports(pool, telegram_id):
         ORDER BY meal_day DESC, meal_time DESC
         LIMIT 1
         """, telegram_id)
-
-        if not result:
-            return (
-                "━━━━━━━━━━━━━━━\n"
-                "📋 Last Meal\n"
-                "❌ No meal reports found yet.\n"
-                "━━━━━━━━━━━━━━━\n"
-                "Add your first meal report to see it here!"
-            )
-
-        dish_name = result["dish_name"]
-        calories_estimated = result["calories_estimated"]
-        protein_g = result["protein_g"]
-        fat_g = result["fat_g"]
-        carbs_g = result["carbs_g"]
-        balance_assessment = result["balance_assessment"]
-        meal_time = result["meal_time"]
-        meal_day = result["meal_day"]
-
-        return (
-            f"━━━━━━━━━━━━━━━\n"
-            f"📋 Last Meal\n"
-            f"🍽 Dish: {dish_name}\n"
-            f"📅 Date: {meal_day} | 🕒 Time: {meal_time}\n"
-            f"🔥 Calories: {calories_estimated} kcal\n"
-            f"💪 Protein: {protein_g} g\n"
-            f"🧈 Fat: {fat_g} g\n"
-            f"🍞 Carbs: {carbs_g} g\n"
-            f"━━━━━━━━━━━━━━━\n"
-            f"⚖️ Balance assessment: {balance_assessment}"
-        )
+        return await show_menu_reports_formated(result)
 
 # Get all users reports from meal_report table
 async def show_all_reports(pool, telegram_id):
@@ -92,26 +64,4 @@ async def show_product_list(pool, telegram_id):
         SELECT products_list FROM meal_report
         WHERE telegram_id = $1 AND meal_day >= NOW() - INTERVAL '7 days'
         """, telegram_id)
-
-        if not result:
-            return (
-                "━━━━━━━━━━━━━━━\n"
-                "🛒 Product List (7 Days)\n"
-                "❌ No meal reports found for the last 7 days.\n"
-                "━━━━━━━━━━━━━━━\n"
-                "Add meals to see your product list here!"
-            )
-
-        formatted_result = [item["products_list"] for item in result if item["products_list"] not in (None, "null", "NULL", "")]
-
-        if not formatted_result:
-            return (
-                "━━━━━━━━━━━━━━━\n"
-                "🛒 Product List (7 Days)\n"
-                "❌ No meal reports found for the last 7 days.\n"
-                "━━━━━━━━━━━━━━━\n"
-                "Add meals to see your product list here!"
-            )
-
-        joined_result = "\n\n".join(formatted_result)
-        return joined_result
+        return await show_product_list_formated(result)

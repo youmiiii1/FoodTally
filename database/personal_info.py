@@ -1,4 +1,5 @@
 from init import close_pool, create_pool
+from utils.formated_text import user_personal_info_formated
 
 """
 goal - 'lose_weight', 'maintain', 'gain_muscle'
@@ -39,7 +40,6 @@ async def change_user_info(pool, telegram_id, age, height, weight, gender, goal)
 async def user_exists(pool, telegram_id):
     async with pool.acquire() as conn:
         result = await conn.fetchval("""SELECT telegram_id FROM users_info WHERE telegram_id = $1""", telegram_id)
-
     return result is not None
 
 # Taking user personal info from database
@@ -49,30 +49,5 @@ async def user_personal_info(pool, telegram_id):
         SELECT age, height, weight, gender, goal 
         FROM users_info WHERE telegram_id = $1
          """, telegram_id)
-
-        if not result:
-            return (
-                "━━━━━━━━━━━━━━━\n"
-                "👤 Personal Info\n"
-                "❌ No personal information found.\n"
-                "━━━━━━━━━━━━━━━\n"
-                "Please fill out your profile first!"
-            )
-
-        age = result["age"]
-        height = result["height"]
-        weight = result["weight"]
-        gender = result["gender"]
-        goal = result["goal"]
-
-        return (
-            f"━━━━━━━━━━━━━━━\n"
-            f"👤 Personal Info\n"
-            f"📅 Age: {age}\n"
-            f"📏 Height: {height} cm\n"
-            f"⚖️ Weight: {weight} kg\n"
-            f"🎯 Goal: {goal}\n"
-            f"🚻 Gender: {gender}\n"
-            f"━━━━━━━━━━━━━━━"
-        )
+        return await user_personal_info_formated(result)
 
