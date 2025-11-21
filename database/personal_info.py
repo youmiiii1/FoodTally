@@ -1,5 +1,5 @@
 from init import close_pool, create_pool
-from utils.formated_text import user_personal_info_formated
+from utils.formatted_text import user_personal_info_formatted
 
 """
 goal - 'lose_weight', 'maintain', 'gain_muscle'
@@ -49,5 +49,5 @@ async def user_personal_info(pool, telegram_id):
         SELECT age, height, weight, gender, goal 
         FROM users_info WHERE telegram_id = $1
          """, telegram_id)
-        return await user_personal_info_formated(result)
+        return await user_personal_info_formatted(result)
 

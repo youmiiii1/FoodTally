@@ -1,4 +1,4 @@
-async def show_menu_reports_formated(result):
+async def show_menu_reports_formatted(result):
     if not result:
         return (
             "━━━━━━━━━━━━━━━\n"
@@ -30,7 +30,7 @@ async def show_menu_reports_formated(result):
         f"⚖️ Balance assessment: {balance_assessment}"
     )
 
-async def show_product_list_formated(result):
+async def show_product_list_formatted(result):
     if not result:
         return (
             "━━━━━━━━━━━━━━━\n"
@@ -55,7 +55,7 @@ async def show_product_list_formated(result):
     joined_result = "\n\n".join(formatted_result)
     return joined_result
 
-async def user_personal_info_formated(result):
+async def user_personal_info_formatted(result):
     if not result:
         return (
             "━━━━━━━━━━━━━━━\n"
@@ -82,7 +82,7 @@ async def user_personal_info_formated(result):
         f"━━━━━━━━━━━━━━━"
     )
 
-async def make_reply_formated(data):
+async def make_record_formatted(data):
     # Getting and formating from make.com as string
     chat_id = int(data.get("chat_id"))
     dish_name = str(data.get("dish_name"))

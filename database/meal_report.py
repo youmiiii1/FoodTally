@@ -1,4 +1,4 @@
-from utils.formated_text import show_menu_reports_formated, show_product_list_formated
+from utils.formatted_text import show_menu_reports_formatted, show_product_list_formatted
 
 # Creating table meal_report if it not exists
 async def create_table_meal_report(pool):
@@ -45,7 +45,7 @@ async def show_menu_reports(pool, telegram_id):
         ORDER BY meal_day DESC, meal_time DESC
         LIMIT 1
         """, telegram_id)
-        return await show_menu_reports_formated(result)
+        return await show_menu_reports_formatted(result)
 
 # Get all users reports from meal_report table
 async def show_all_reports(pool, telegram_id):
@@ -64,4 +64,4 @@ async def show_product_list(pool, telegram_id):
         SELECT products_list FROM meal_report
         WHERE telegram_id = $1 AND meal_day >= NOW() - INTERVAL '7 days'
         """, telegram_id)
-        return await show_product_list_formated(result)
+        return await show_product_list_formatted(result)

@@ -7,7 +7,7 @@ from database.meal_report import create_table_meal_report, new_report
 from database.personal_info import create_table_users_info
 from keyboards.main_menu import main_menu_keyboard
 from texts.main_menu import main_menu_text
-from utils.formated_text import make_reply_formated, make_reply_formatted, make_build_formatted, make_shop_help_formatted
+from utils.formatted_text import make_record_formatted, make_reply_formatted, make_build_formatted, make_shop_help_formatted
 
 # Logging to logs.txt
 logging.basicConfig(level=logging.INFO,
@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO,
 async def make_reply(request: Request):
     try:
         data = await request.json()
-        formatted = await make_reply_formated(data)
+        formatted = await make_record_formatted(data)
 
         result = await bot.send_message(
             chat_id=formatted["chat_id"],
